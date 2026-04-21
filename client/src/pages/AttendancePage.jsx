@@ -22,25 +22,44 @@ export default function AttendancePage() {
   const { user } = useAuth();
   const [list, setList] = useState([]);
   const [students, setStudents] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [form, setForm] = useState({ studentId: "", classId: "", date: "", status: "present", faceRecognitionMeta: "mock-face-id" });
   const [status, setStatus] = useState("");
 
-  const load = () => api.get("/attendance").then((res) => setList(res.data));
+  const load = async () => {
+    setLoading(true);
+    try {
+      const res = await api.get("/attendance");
+      setList(Array.isArray(res.data) ? res.data : []);
+    } catch (error) {
+      setStatus(error?.response?.data?.message || "Failed to load attendance");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     load();
-    if (user.role !== "student") {
-      api.get("/users?role=student&loggedIn=true").then((res) => setStudents(res.data));
+    if (user?.role !== "student") {
+      api
+        .get("/users?role=student&loggedIn=true")
+        .then((res) => setStudents(Array.isArray(res.data) ? res.data : []))
+        .catch(() => setStudents([]));
     }
-  }, []);
+  }, [user?.role]);
 
   const submit = async () => {
     setStatus("");
-    if (user.role !== "student" && !form.studentId) return setStatus("Select a student");
+    if (user?.role !== "student" && !form.studentId) return setStatus("Select a student");
     if (!form.classId.trim()) return setStatus("classId is required");
     if (!form.date) return setStatus("Date is required");
-    await api.post("/attendance", { ...form, classId: form.classId.trim() });
-    setStatus("Saved");
-    load();
+    try {
+      await api.post("/attendance", { ...form, classId: form.classId.trim() });
+      setStatus("Saved");
+      load();
+    } catch (error) {
+      setStatus(error?.response?.data?.message || "Failed to save attendance");
+    }
   };
 
   return (
@@ -48,13 +67,13 @@ export default function AttendancePage() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Attendance</h1>
         <p className="text-sm text-slate-600">
-          {user.role === "student" ? "Your attendance records." : "Mark attendance for logged-in students."}
+          {user?.role === "student" ? "Your attendance records." : "Mark attendance for logged-in students."}
         </p>
       </div>
 
       {status && <Alert variant={status === "Saved" ? "success" : "warning"}>{status}</Alert>}
 
-      {user.role !== "student" && (
+      {user?.role !== "student" && (
         <Card>
           <CardHeader>
             <CardTitle>Mark attendance</CardTitle>
@@ -84,7 +103,12 @@ export default function AttendancePage() {
                 </option>
               ))}
             </select>
-            <Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
+            <input
+              className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm shadow-sm focus:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+              type="date"
+              value={form.date}
+              onChange={(e) => setForm({ ...form, date: e.target.value })}
+            />
             <select
               className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm shadow-sm focus:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-100"
               value={form.status}
@@ -100,11 +124,15 @@ export default function AttendancePage() {
         </Card>
       )}
 
-      {list.length === 0 ? (
+      {loading ? (
+        <div className="rounded-xl border border-slate-200 bg-white p-6 text-center text-sm text-slate-600">Loading attendance...</div>
+      ) : null}
+
+      {!loading && list.length === 0 ? (
         <div className="rounded-xl border border-dashed border-slate-200 p-6 text-center text-sm text-slate-600">
           No attendance records yet.
         </div>
-      ) : (
+      ) : !loading ? (
         <div className="grid grid-cols-1 gap-3">
           {list.map((a) => (
             <Card key={a._id}>
@@ -123,7 +151,7 @@ export default function AttendancePage() {
             </Card>
           ))}
         </div>
-      )}
+      ) : null}
     </div>
   );
 }
