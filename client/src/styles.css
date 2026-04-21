@@ -1,0 +1,15 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: Inter, system-ui, sans-serif;
+  color: rgb(15 23 42);
+}
+
+/* Subtle app background so it doesn't feel flat/boring */
+.app-shell {
+  background:
+    radial-gradient(900px 500px at 10% 0%, rgba(148, 163, 184, 0.12), transparent 60%),
+    linear-gradient(to bottom, rgb(248 250 252), rgb(241 245 249));
+}
