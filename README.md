@@ -31,6 +31,13 @@ This project is ready for Netlify direct deployment (no backend service needed).
 - Build command: `npm run build`
 - Publish dir: `dist`
 
+Live Website
+
+👉 Open Here:
+https://online-studentandteacher-portal.netlify.app/login
+
 ## Credits
 
 - Built by **batch 10 csm-b**
+
+
